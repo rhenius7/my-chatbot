@@ -2,34 +2,41 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 
-# ✅ Step 1: Create FastAPI App
 app = FastAPI()
 
-# ✅ Step 2: Configure CORS (MUST come after `app = FastAPI()`)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # 🔥 Replace with your actual frontend URL
+    allow_origins=["http://localhost:3000"],  # ✅ Make sure this matches your frontend
     allow_credentials=True,
-    allow_methods=["POST"],  # Limit to only needed methods for security
-    allow_headers=["Content-Type", "Authorization"],  # Limit to required headers
+    allow_methods=["POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
-# ✅ Step 3: Set up Gemini API Key
-genai.configure(api_key="AIzaSyCXYAtK0-IchMXc5z9HZBlnN9KrYDVf_pg")
+# ✅ Ensure API key is correctly set
+genai.configure(api_key="AIzaSyDyJNQAMUw6t_pbBdoka2Q_u0qFWiIaAQw")
 
-# ✅ Step 4: Define Chatbot Route
 @app.post("/chat")
 async def chat(request: dict):
-    user_message = request.get("message", "")
-    if not user_message:
-        return {"response": "Please enter a message."}
-    
-    model = genai.GenerativeModel("gemini-pro")
-    response = model.generate_content(user_message)
-    
-    return {"response": response.text}
+    try:
+        user_message = request.get("message", "")
+        if not user_message:
+            return {"response": "⚠️ Please enter a message."}
 
-# ✅ Step 5: Run Server
+        # ✅ Initialize model
+        model = genai.GenerativeModel("gemini-1.5-pro")
+
+        # ✅ Generate response safely
+        response = model.generate_content(user_message)
+
+        if not response or not hasattr(response, "text"):
+            return {"response": "⚠️ No response from AI."}
+
+        return {"response": response.text}
+
+    except Exception as e:
+        print(f"❌ Error: {e}")  # ✅ Debugging in the console
+        return {"response": "⚠️ AI service unavailable. Try again later."}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
